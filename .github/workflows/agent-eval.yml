@@ -30,3 +30,15 @@ jobs:
       - name: Show BugsInPy project info
         run: |
           bugsinpy-info -p youtube-dl
+      
+      - name: Checkout buggy project
+        run: |
+          bugsinpy-checkout -p youtube-dl -i 1 -v 0 -w workdir
+
+      - name: List checked out files
+        run: |
+          ls -la workdir
+
+      - name: Show bug metadata
+        run: |
+          find workdir -maxdepth 3 | head -100
