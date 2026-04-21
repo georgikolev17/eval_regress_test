@@ -33,7 +33,11 @@ jobs:
       
       - name: Checkout buggy project
         run: |
-          bugsinpy-checkout -p youtube-dl -i 1 -v 0 -w workdir
+          bugsinpy-checkout -p youtube-dl -i 1 -v buggy -w workdir
+
+      - name: Debug files
+        run: |
+          ls -la
 
       - name: List checked out files
         run: |
