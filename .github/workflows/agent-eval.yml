@@ -58,7 +58,7 @@ jobs:
 
       - name: Checkout requested bug version
         run: |
-          bugsinpy-checkout -p "$PROJECT" -i "$BUG_ID" -v "$VERSION_ID" -w workdir
+          bugsinpy-checkout -p "$PROJECT" -i "$BUG_ID" -v "$VERSION_ID" -w "$GITHUB_WORKSPACE/workdir"
 
       - name: Verify checkout exists
         run: |
