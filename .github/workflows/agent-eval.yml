@@ -1,17 +1,38 @@
-name: Agent Eval MVP
+name: BugsInPy Smoke Test
 
 on:
   workflow_dispatch:
+    inputs:
+      project:
+        description: "BugsInPy project name"
+        required: true
+        default: "youtube-dl"
+      bug_id:
+        description: "Bug ID"
+        required: true
+        default: "2"
+      version_id:
+        description: "0 = buggy, 1 = fixed"
+        required: true
+        default: "0"
+
+permissions:
+  contents: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  test-runner:
+  bugsinpy-smoke:
     runs-on: ubuntu-latest
 
+    env:
+      PROJECT: ${{ inputs.project }}
+      BUG_ID: ${{ inputs.bug_id }}
+      VERSION_ID: ${{ inputs.version_id }}
+
     steps:
-      - name: Checkout your repo
+      - name: Checkout this repo
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -23,32 +44,41 @@ jobs:
         run: |
           git clone https://github.com/reproducing-research-projects/BugsInPy.git
 
-      - name: Add BugsInPy tools to PATH
+      - name: Add BugsInPy CLI to PATH
         run: |
-          echo "${GITHUB_WORKSPACE}/BugsInPy/framework/bin" >> $GITHUB_PATH
+          echo "${GITHUB_WORKSPACE}/BugsInPy/framework/bin" >> "$GITHUB_PATH"
 
-      - name: Show BugsInPy project info
-        run: |
-          bugsinpy-info -p youtube-dl
-      
-      - name: Create output directory
+      - name: Create checkout directory
         run: |
           mkdir -p workdir
-          cd workdir
-          mkdir -p youtube-dl
-          cd ..
-          cd ..
 
-      - name: Checkout buggy project
+      - name: Show project info
         run: |
-          bugsinpy-checkout -p youtube-dl -i 1 -v 0 -w workdir
+          bugsinpy-info -p "$PROJECT"
 
-      - name: Debug files
+      - name: Checkout requested bug version
         run: |
-          ls -la
+          bugsinpy-checkout -p "$PROJECT" -i "$BUG_ID" -v "$VERSION_ID" -w workdir
+
+      - name: Verify checkout exists
+        run: |
+          test -d "workdir/$PROJECT"
+          test -f "workdir/$PROJECT/bugsinpy_bug.info"
+          echo "Checkout OK: workdir/$PROJECT"
+
+      - name: Show checked out files
+        run: |
           ls -la workdir
-          ls -la workdir/youtube-dl
+          ls -la "workdir/$PROJECT"
+          find "workdir/$PROJECT" -maxdepth 2 -type f | head -100
 
-      - name: Show bug metadata
+      - name: Workflow summary
         run: |
-          find workdir -maxdepth 3 | head -100
+          {
+            echo "## BugsInPy smoke test"
+            echo ""
+            echo "- Project: $PROJECT"
+            echo "- Bug ID: $BUG_ID"
+            echo "- Version: $VERSION_ID"
+            echo "- Checked out path: workdir/$PROJECT"
+          } >> "$GITHUB_STEP_SUMMARY"
