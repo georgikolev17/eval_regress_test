@@ -83,6 +83,14 @@ jobs:
             echo "- Checked out path: workdir/$PROJECT"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true  
+      - name: Create bug conda env
+        run: |
+          conda create -n ce4643cfe50c63d63380c1ef67ea5299 -y python=3.7.0
+          
       - name: Compile checked out project
         run: |
           cd "$GITHUB_WORKSPACE/workdir/$PROJECT"
@@ -96,11 +104,10 @@ jobs:
           cd "$GITHUB_WORKSPACE/workdir/$PROJECT"
           set +e
           bugsinpy-test 2>&1 | tee "$GITHUB_WORKSPACE/test.log"
-          echo "TEST_EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
           EXIT_CODE=${PIPESTATUS[0]}
+          echo "TEST_EXIT_CODE=$EXIT_CODE" >> "$GITHUB_ENV"
           echo "Test exit code: $EXIT_CODE"
           test $EXIT_CODE -ne 0
-          exit 0
 
       - name: Show result summary
         run: |
