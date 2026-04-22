@@ -82,3 +82,49 @@ jobs:
             echo "- Version: $VERSION_ID"
             echo "- Checked out path: workdir/$PROJECT"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Compile checked out project
+        run: |
+          cd "$GITHUB_WORKSPACE/workdir/$PROJECT"
+          set +e
+          bugsinpy-compile 2>&1 | tee "$GITHUB_WORKSPACE/compile.log"
+          echo "COMPILE_EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
+          exit 0
+
+      - name: Run bug-relevant tests
+        run: |
+          cd "$GITHUB_WORKSPACE/workdir/$PROJECT"
+          set +e
+          bugsinpy-test 2>&1 | tee "$GITHUB_WORKSPACE/test.log"
+          echo "TEST_EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "Test exit code: $EXIT_CODE"
+          test $EXIT_CODE -ne 0
+          exit 0
+
+      - name: Show result summary
+        run: |
+          echo "Compile exit code: $COMPILE_EXIT_CODE"
+          echo "Test exit code: $TEST_EXIT_CODE"
+          {
+            echo "## BugsInPy test result"
+            echo ""
+            echo "- Project: $PROJECT"
+            echo "- Bug ID: $BUG_ID"
+            echo "- Version: $VERSION_ID"
+            echo "- Compile exit code: $COMPILE_EXIT_CODE"
+            echo "- Test exit code: $TEST_EXIT_CODE"
+            echo ""
+            echo "### Last lines of test output"
+            echo '```'
+            tail -n 40 "$GITHUB_WORKSPACE/test.log" || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: bugsinpy-logs
+          path: |
+            ${{ github.workspace }}/compile.log
+            ${{ github.workspace }}/test.log
