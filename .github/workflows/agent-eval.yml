@@ -1,20 +1,16 @@
-name: BugsInPy Smoke Test
+name: Defects4J Triggering-Test Smoke Test
 
 on:
   workflow_dispatch:
     inputs:
       project:
-        description: "BugsInPy project name"
+        description: "Defects4J project ID"
         required: true
-        default: "youtube-dl"
+        default: "Lang"
       bug_id:
         description: "Bug ID"
         required: true
-        default: "2"
-      version_id:
-        description: "0 = buggy, 1 = fixed"
-        required: true
-        default: "0"
+        default: "1"
 
 permissions:
   contents: read
@@ -23,120 +19,110 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  bugsinpy-smoke:
+  defects4j-smoke:
     runs-on: ubuntu-latest
 
     env:
       PROJECT: ${{ inputs.project }}
       BUG_ID: ${{ inputs.bug_id }}
-      VERSION_ID: ${{ inputs.version_id }}
+      WORKDIR: ${{ github.workspace }}/workdir
 
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup Java 11
+        uses: actions/setup-java@v4
         with:
-          python-version: "3.10"
+          distribution: temurin
+          java-version: "11"
 
-      - name: Clone BugsInPy
+      - name: Install OS dependencies
         run: |
-          git clone https://github.com/reproducing-research-projects/BugsInPy.git
+          sudo apt-get update
+          sudo apt-get install -y subversion cpanminus
 
-      - name: Add BugsInPy CLI to PATH
+      - name: Clone Defects4J
         run: |
-          echo "${GITHUB_WORKSPACE}/BugsInPy/framework/bin" >> "$GITHUB_PATH"
+          git clone https://github.com/rjust/defects4j.git
 
-      - name: Create checkout directory
+      - name: Install Defects4J Perl deps
         run: |
-          mkdir -p workdir
+          cd defects4j
+          cpanm --installdeps .
 
-      - name: Show project info
+      - name: Initialize Defects4J
         run: |
-          bugsinpy-info -p "$PROJECT"
+          cd defects4j
+          ./init.sh
 
-      - name: Checkout requested bug version
+      - name: Add Defects4J CLI to PATH
         run: |
-          bugsinpy-checkout -p "$PROJECT" -i "$BUG_ID" -v "$VERSION_ID" -w "$GITHUB_WORKSPACE/workdir"
+          echo "${GITHUB_WORKSPACE}/defects4j/framework/bin" >> "$GITHUB_PATH"
 
-      - name: Verify checkout exists
+      - name: Show bug info
         run: |
-          test -d "workdir/$PROJECT"
-          test -f "workdir/$PROJECT/bugsinpy_bug.info"
-          echo "Checkout OK: workdir/$PROJECT"
+          defects4j info -p "$PROJECT" -b "$BUG_ID"
 
-      - name: Show checked out files
+      - name: Checkout buggy version
         run: |
-          ls -la workdir
-          ls -la "workdir/$PROJECT"
-          find "workdir/$PROJECT" -maxdepth 2 -type f | head -100
+          mkdir -p "$WORKDIR"
+          defects4j checkout -p "$PROJECT" -v "${BUG_ID}b" -w "$WORKDIR"
 
-      - name: Workflow summary
+      - name: Compile buggy version
         run: |
-          {
-            echo "## BugsInPy smoke test"
-            echo ""
-            echo "- Project: $PROJECT"
-            echo "- Bug ID: $BUG_ID"
-            echo "- Version: $VERSION_ID"
-            echo "- Checked out path: workdir/$PROJECT"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-activate-base: true 
-          
-      - name: Create bug conda env
-        run: |
-          conda create -n ce4643cfe50c63d63380c1ef67ea5299 -y python=3.7.0
-
-      - name: Make Conda visible at /opt/conda
-        run: |
-          CONDA_BASE=$(conda info --base)
-          echo "Real conda base: $CONDA_BASE"
-          sudo rm -rf /opt/conda || true
-          sudo ln -s "$CONDA_BASE" /opt/conda
-          ls -la /opt/conda/etc/profile.d/conda.sh
-          
-      - name: Compile checked out project
-        run: |
-          cd "$GITHUB_WORKSPACE/workdir/$PROJECT"
           set +e
-          bugsinpy-compile 2>&1 | tee "$GITHUB_WORKSPACE/compile.log"
+          defects4j compile -w "$WORKDIR" 2>&1 | tee "$GITHUB_WORKSPACE/compile.log"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "COMPILE_EXIT_CODE=$EXIT_CODE" >> "$GITHUB_ENV"
           echo "Compile exit code: $EXIT_CODE"
-          echo "Last 100 lines of compile.log:"
-          tail -n 100 "$GITHUB_WORKSPACE/compile.log" || true
           test $EXIT_CODE -eq 0
 
-      - name: Run bug-relevant tests
+      - name: Export triggering tests
         run: |
-          cd "$GITHUB_WORKSPACE/workdir/$PROJECT"
+          defects4j export -p tests.trigger -w "$WORKDIR" -o "$GITHUB_WORKSPACE/trigger_tests.txt"
+          echo "Triggering tests:"
+          cat "$GITHUB_WORKSPACE/trigger_tests.txt"
+
+      - name: Run first triggering test and assert failure
+        run: |
+          FIRST_TEST=$(head -n 1 "$GITHUB_WORKSPACE/trigger_tests.txt")
+          echo "FIRST_TRIGGER_TEST=$FIRST_TEST" >> "$GITHUB_ENV"
+          echo "Running: $FIRST_TEST"
+
           set +e
-          bugsinpy-test 2>&1 | tee "$GITHUB_WORKSPACE/test.log"
+          defects4j test -w "$WORKDIR" -t "$FIRST_TEST" 2>&1 | tee "$GITHUB_WORKSPACE/test.log"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "TEST_EXIT_CODE=$EXIT_CODE" >> "$GITHUB_ENV"
           echo "Test exit code: $EXIT_CODE"
+
+          # Buggy version should fail this triggering test
           test $EXIT_CODE -ne 0
 
-      - name: Show result summary
+      - name: Show summary
         if: always()
         run: |
-          echo "Compile exit code: $COMPILE_EXIT_CODE"
-          echo "Test exit code: $TEST_EXIT_CODE"
           {
-            echo "## BugsInPy test result"
+            echo "## Defects4J smoke test"
             echo ""
             echo "- Project: $PROJECT"
             echo "- Bug ID: $BUG_ID"
-            echo "- Version: $VERSION_ID"
-            echo "- Compile exit code: $COMPILE_EXIT_CODE"
-            echo "- Test exit code: $TEST_EXIT_CODE"
+            echo "- Checked out version: ${BUG_ID}b"
+            echo "- Compile exit code: ${COMPILE_EXIT_CODE:-not-set}"
+            echo "- Triggering test: ${FIRST_TRIGGER_TEST:-not-set}"
+            echo "- Trigger test exit code: ${TEST_EXIT_CODE:-not-set}"
             echo ""
-            echo "### Last lines of test output"
+            echo "### Trigger tests"
+            echo '```'
+            cat "$GITHUB_WORKSPACE/trigger_tests.txt" || true
+            echo '```'
+            echo ""
+            echo "### Last lines of compile.log"
+            echo '```'
+            tail -n 40 "$GITHUB_WORKSPACE/compile.log" || true
+            echo '```'
+            echo ""
+            echo "### Last lines of test.log"
             echo '```'
             tail -n 40 "$GITHUB_WORKSPACE/test.log" || true
             echo '```'
@@ -146,7 +132,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bugsinpy-logs
+          name: defects4j-logs
           path: |
             ${{ github.workspace }}/compile.log
             ${{ github.workspace }}/test.log
+            ${{ github.workspace }}/trigger_tests.txt
