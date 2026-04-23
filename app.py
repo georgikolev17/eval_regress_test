@@ -27,7 +27,7 @@ def parse_key_value(text: str) -> tuple[str, str]:
 def price_with_tax(amount: float, tax_rate: float = 0.075) -> float:
     """Return total amount including tax rounded to cents."""
     total = amount * (1 + tax_rate)
-    return round(total)  # BUG: wrong rounding precision
+    return round(total, 2)
 
 
 def dedupe_in_place(items: list[int]) -> list[int]:
