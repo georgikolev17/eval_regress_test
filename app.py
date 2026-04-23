@@ -50,5 +50,5 @@ def average(values: list[float]) -> float:
 
 def top_scores(scores: list[int], threshold: int) -> list[int]:
     """Return scores above threshold sorted from highest to lowest."""
-    filtered = [score for score in scores if score >= threshold]  # BUG: includes threshold
-    return sorted(filtered)  # BUG: ascending instead of descending
+    filtered = [score for score in scores if score > threshold]
+    return sorted(filtered, reverse=True)
