@@ -3,7 +3,7 @@
 
 def count_up_to(limit: int) -> list[int]:
     """Return numbers from 1 through limit inclusive."""
-    return list(range(1, limit))  # BUG: off-by-one, excludes limit
+    return list(range(1, limit + 1))
 
 
 def is_adult(age: int) -> bool:
