@@ -105,8 +105,10 @@ jobs:
           cd "$GITHUB_WORKSPACE/workdir/$PROJECT"
           set +e
           bugsinpy-compile 2>&1 | tee "$GITHUB_WORKSPACE/compile.log"
-          echo "COMPILE_EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
-          exit 0
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "COMPILE_EXIT_CODE=$EXIT_CODE" >> "$GITHUB_ENV"
+          echo "Compile exit code: $EXIT_CODE"
+          test $EXIT_CODE -eq 0
 
       - name: Run bug-relevant tests
         run: |
@@ -119,6 +121,7 @@ jobs:
           test $EXIT_CODE -ne 0
 
       - name: Show result summary
+        if: always()
         run: |
           echo "Compile exit code: $COMPILE_EXIT_CODE"
           echo "Test exit code: $TEST_EXIT_CODE"
@@ -138,6 +141,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bugsinpy-logs
