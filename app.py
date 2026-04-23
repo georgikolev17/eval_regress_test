@@ -13,9 +13,9 @@ def is_adult(age: int) -> bool:
 
 def greet(name: str | None = None) -> str:
     """Return a greeting, defaulting to "Guest"."""
-    if name is None:
+    if not name:
         return "Hello, Guest!"
-    return f"Hello, {name}!"  # BUG: empty string should use default too
+    return f"Hello, {name}!"
 
 
 def parse_key_value(text: str) -> tuple[str, str]:
