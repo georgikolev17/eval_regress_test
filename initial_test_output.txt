@@ -1,0 +1,108 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_______________________ test_count_up_to_includes_limit ________________________
+
+    def test_count_up_to_includes_limit():
+>       assert app.count_up_to(4) == [1, 2, 3, 4]
+E       assert [1, 2, 3] == [1, 2, 3, 4]
+E         
+E         Right contains one more item: 4
+E         Use -v to get more diff
+
+test_app.py:7: AssertionError
+___________________________ test_is_adult_accepts_18 ___________________________
+
+    def test_is_adult_accepts_18():
+>       assert app.is_adult(18) is True
+E       assert False is True
+E        +  where False = <function is_adult at 0x7f34e615bc70>(18)
+E        +    where <function is_adult at 0x7f34e615bc70> = app.is_adult
+
+test_app.py:11: AssertionError
+_____________________ test_greet_empty_string_uses_default _____________________
+
+    def test_greet_empty_string_uses_default():
+>       assert app.greet("") == "Hello, Guest!"
+E       AssertionError: assert 'Hello, !' == 'Hello, Guest!'
+E         
+E         - Hello, Guest!
+E         ?        -----
+E         + Hello, !
+
+test_app.py:15: AssertionError
+__________________ test_parse_key_value_allows_colon_in_value __________________
+
+    def test_parse_key_value_allows_colon_in_value():
+>       assert app.parse_key_value("path:/usr/local:bin") == ("path", "/usr/local:bin")
+
+test_app.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = 'path:/usr/local:bin'
+
+    def parse_key_value(text: str) -> tuple[str, str]:
+        """Parse 'key:value' into a (key, value) tuple."""
+>       key, value = text.split(":")  # BUG: breaks when value contains ':'
+E       ValueError: too many values to unpack (expected 2)
+
+app.py:23: ValueError
+_________________ test_price_with_tax_keeps_two_decimal_places _________________
+
+    def test_price_with_tax_keeps_two_decimal_places():
+>       assert app.price_with_tax(10.00, 0.075) == 10.75
+E       assert 11 == 10.75
+E        +  where 11 = <function price_with_tax at 0x7f34e615be20>(10.0, 0.075)
+E        +    where <function price_with_tax at 0x7f34e615be20> = app.price_with_tax
+
+test_app.py:23: AssertionError
+_______________ test_dedupe_in_place_does_not_mutate_input_list ________________
+
+    def test_dedupe_in_place_does_not_mutate_input_list():
+        original = [1, 1, 2, 3]
+        snapshot = original[:]
+        result = app.dedupe_in_place(original)
+>       assert original == snapshot
+E       assert [1, 2, 3] == [1, 1, 2, 3]
+E         
+E         At index 1 diff: 2 != 1
+E         Right contains one more item: 3
+E         Use -v to get more diff
+
+test_app.py:30: AssertionError
+____________________ test_average_empty_input_returns_zero _____________________
+
+    def test_average_empty_input_returns_zero():
+>       assert app.average([]) == 0.0
+
+test_app.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+values = []
+
+    def average(values: list[float]) -> float:
+        """Return arithmetic mean of a non-empty list."""
+>       return sum(values) / len(values)  # BUG: empty input not handled
+E       ZeroDivisionError: division by zero
+
+app.py:48: ZeroDivisionError
+___________ test_top_scores_excludes_threshold_and_sorts_descending ____________
+
+    def test_top_scores_excludes_threshold_and_sorts_descending():
+>       assert app.top_scores([50, 60, 70, 80], 70) == [80]
+E       assert [70, 80] == [80]
+E         
+E         At index 0 diff: 70 != 80
+E         Left contains one more item: 80
+E         Use -v to get more diff
+
+test_app.py:39: AssertionError
+=========================== short test summary info ============================
+FAILED test_app.py::test_count_up_to_includes_limit - assert [1, 2, 3] == [1,...
+FAILED test_app.py::test_is_adult_accepts_18 - assert False is True
+FAILED test_app.py::test_greet_empty_string_uses_default - AssertionError: as...
+FAILED test_app.py::test_parse_key_value_allows_colon_in_value - ValueError: ...
+FAILED test_app.py::test_price_with_tax_keeps_two_decimal_places - assert 11 ...
+FAILED test_app.py::test_dedupe_in_place_does_not_mutate_input_list - assert ...
+FAILED test_app.py::test_average_empty_input_returns_zero - ZeroDivisionError...
+FAILED test_app.py::test_top_scores_excludes_threshold_and_sorts_descending
+8 failed in 0.09s
