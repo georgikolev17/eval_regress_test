@@ -22,20 +22,19 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Probe GitHub Models endpoint
+      - name: Debug allowed models
         run: |
-          set -e
-          cat > body.json <<'JSON'
-          {"model":"openai/gpt-4.1","messages":[{"role":"user","content":"Reply with OK"}],"max_tokens":10}
-          JSON
-      
-          status=$(curl -sS -o response.json -w "%{http_code}" \
-            "https://models.github.ai/inference/chat/completions" \
+          curl -sS \
             -H "Authorization: Bearer ${{ github.token }}" \
-            -H "Content-Type: application/json" \
             -H "Accept: application/vnd.github+json" \
-            -d @body.json)
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "https://models.github.ai/catalog/models" > models.json
       
-          echo "HTTP status: $status"
-          cat response.json
-          test "$status" -ge 200 -a "$status" -lt 300
+          python - <<'PY'
+          import json
+          data = json.load(open("models.json", "r", encoding="utf-8"))
+          ids = [m.get("id") for m in data if isinstance(m, dict)]
+          print(f"models returned: {len(ids)}")
+          print("contains openai/gpt-4.1:", "openai/gpt-4.1" in ids)
+          print("sample:", ids[:20])
+          PY
