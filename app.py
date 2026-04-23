@@ -20,7 +20,7 @@ def greet(name: str | None = None) -> str:
 
 def parse_key_value(text: str) -> tuple[str, str]:
     """Parse 'key:value' into a (key, value) tuple."""
-    key, value = text.split(":")  # BUG: breaks when value contains ':'
+    key, value = text.split(":", 1)
     return key.strip(), value.strip()
 
 
