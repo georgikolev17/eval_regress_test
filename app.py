@@ -8,7 +8,7 @@ def count_up_to(limit: int) -> list[int]:
 
 def is_adult(age: int) -> bool:
     """Return True when age is 18 or older."""
-    return age > 18  # BUG: wrong comparison operator
+    return age >= 18
 
 
 def greet(name: str | None = None) -> str:
