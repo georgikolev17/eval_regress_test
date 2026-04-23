@@ -108,6 +108,8 @@ jobs:
           EXIT_CODE=${PIPESTATUS[0]}
           echo "COMPILE_EXIT_CODE=$EXIT_CODE" >> "$GITHUB_ENV"
           echo "Compile exit code: $EXIT_CODE"
+          echo "Last 100 lines of compile.log:"
+          tail -n 100 "$GITHUB_WORKSPACE/compile.log" || true
           test $EXIT_CODE -eq 0
 
       - name: Run bug-relevant tests
