@@ -42,8 +42,10 @@ def dedupe_in_place(items: list[int]) -> list[int]:
 
 
 def average(values: list[float]) -> float:
-    """Return arithmetic mean of a non-empty list."""
-    return sum(values) / len(values)  # BUG: empty input not handled
+    """Return arithmetic mean of a list, or 0.0 for empty input."""
+    if not values:
+        return 0.0
+    return sum(values) / len(values)
 
 
 def top_scores(scores: list[int], threshold: int) -> list[int]:
