@@ -33,14 +33,12 @@ def price_with_tax(amount: float, tax_rate: float = 0.075) -> float:
 def dedupe_in_place(items: list[int]) -> list[int]:
     """Return a list with duplicates removed while preserving order."""
     seen = set()
-    i = 0
-    while i < len(items):
-        if items[i] in seen:
-            items.pop(i)  # BUG: mutates caller input
-        else:
-            seen.add(items[i])
-            i += 1
-    return items
+    result = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
 
 
 def average(values: list[float]) -> float:
