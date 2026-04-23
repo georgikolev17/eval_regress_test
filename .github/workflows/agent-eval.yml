@@ -49,7 +49,7 @@ jobs:
       - name: Install Defects4J Perl deps
         run: |
           cd defects4j
-          cpanm --installdeps .
+          sudo cpanm --installdeps .
 
       - name: Initialize Defects4J
         run: |
