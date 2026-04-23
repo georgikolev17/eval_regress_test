@@ -1,0 +1,18 @@
+name: Call Platform Eval Demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  models: read
+
+jobs:
+  run-platform-eval:
+    uses: georgikolev17/agent_eval_platform/.github/workflows/run-eval.yml@main
+    with:
+      issue_id: "2"
+      issue_description: "Fix is_adult boundary condition so age 18 returns True."
+      base_commit: "4b54fd6813fa8ce88cafb3c89dde9e2d8b84b30d"
+      target_test: "test_app.py::test_is_adult_accepts_18"
+      model: "openai/gpt-4o"
