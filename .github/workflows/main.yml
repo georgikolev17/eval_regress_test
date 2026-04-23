@@ -22,39 +22,39 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Probe GitHub Models endpoint
+      - name: Debug models access in this exact run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # TODO_DEMO: If your org requires org-attributed usage, use:
-          # GH_MODELS_URL: https://models.github.ai/orgs/<ORG>/inference/chat/completions
-          GH_MODELS_URL: https://models.github.ai/inference/chat/completions
         run: |
           set -euo pipefail
-          mkdir -p artifacts
+          echo "repo=${{ github.repository }}"
+          echo "event=${{ github.event_name }}"
+          echo "actor=${{ github.actor }}"
+          echo "fork=${{ github.event.pull_request.head.repo.fork || false }}"
       
-          cat > artifacts/body.json <<'JSON'
-          {
-            "model": "openai/gpt-4.1",
-            "messages": [
-              { "role": "user", "content": "Reply with exactly OK" }
-            ],
-            "temperature": 0
-          }
+          curl -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "https://models.github.ai/catalog/models" > models.json
+      
+          python - <<'PY'
+          import json
+          m=json.load(open("models.json","r",encoding="utf-8"))
+          ids=[x.get("id") for x in m if isinstance(x,dict)]
+          print("catalog_has_gpt41=", "openai/gpt-4.1" in ids)
+          print("count=", len(ids))
+          PY
+      
+          cat > body.json <<'JSON'
+          {"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"OK"}],"temperature":0}
           JSON
       
-          status=$(curl -sS -X POST \
-            -o artifacts/response.json \
-            -w "%{http_code}" \
-            "$GH_MODELS_URL?api-version=2026-03-10" \
+          code=$(curl -sS -X POST -o resp.json -w "%{http_code}" \
+            "https://models.github.ai/inference/chat/completions?api-version=2026-03-10" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/vnd.github+json" \
-            -d @artifacts/body.json)
-      
-          echo "HTTP status: $status"
-          cat artifacts/response.json
-      
-          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
-            echo "Probe failed with HTTP $status"
-            exit 1
-          fi
+            -d @body.json)
+          echo "mini_status=$code"
+          cat resp.json
