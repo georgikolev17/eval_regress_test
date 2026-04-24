@@ -8,6 +8,11 @@ on:
         required: true
         type: string
         default: "2"
+      issue_description:
+        description: Optional issue description fetched by dashboard
+        required: false
+        type: string
+        default: ""
       model:
         description: GitHub Models model id
         required: true
@@ -48,6 +53,7 @@ jobs:
     uses: georgikolev17/agent_eval_platform/.github/workflows/run-eval.yml@main
     with:
       issue_id: ${{ inputs.issue_id }}
+      issue_description: ${{ inputs.issue_description }}
       model: ${{ inputs.model }}
       base_commit: ${{ inputs.base_commit }}
       target_test: ${{ inputs.target_test }}
