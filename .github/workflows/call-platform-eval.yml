@@ -2,6 +2,42 @@ name: Call Platform Eval Demo
 
 on:
   workflow_dispatch:
+    inputs:
+      issue_id:
+        description: Issue identifier to evaluate
+        required: true
+        type: string
+        default: "2"
+      model:
+        description: GitHub Models model id
+        required: true
+        type: string
+        default: "openai/gpt-4o"
+      base_commit:
+        description: Commit SHA to reset before eval
+        required: true
+        type: string
+        default: "4b54fd6813fa8ce88cafb3c89dde9e2d8b84b30d"
+      target_test:
+        description: Pytest selector expected to fail then pass
+        required: true
+        type: string
+        default: "test_app.py::test_is_adult_accepts_18"
+      full_verify:
+        description: Full verification command
+        required: true
+        type: string
+        default: "python -m pytest"
+      source_file:
+        description: File to overwrite with model output
+        required: true
+        type: string
+        default: "app.py"
+      prompt_file:
+        description: Prompt file path used by reusable workflow
+        required: true
+        type: string
+        default: "task_prompts.md"
 
 permissions:
   contents: read
@@ -11,8 +47,10 @@ jobs:
   run-platform-eval:
     uses: georgikolev17/agent_eval_platform/.github/workflows/run-eval.yml@main
     with:
-      issue_id: "2"
-      issue_description: "Fix is_adult boundary condition so age 18 returns True."
-      base_commit: "4b54fd6813fa8ce88cafb3c89dde9e2d8b84b30d"
-      target_test: "test_app.py::test_is_adult_accepts_18"
-      model: "openai/gpt-4o"
+      issue_id: ${{ inputs.issue_id }}
+      model: ${{ inputs.model }}
+      base_commit: ${{ inputs.base_commit }}
+      target_test: ${{ inputs.target_test }}
+      full_verify: ${{ inputs.full_verify }}
+      source_file: ${{ inputs.source_file }}
+      prompt_file: ${{ inputs.prompt_file }}
